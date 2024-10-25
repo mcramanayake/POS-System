@@ -11,6 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Data.SQLite;
+
 
 
 
@@ -18,10 +20,8 @@ namespace POS_System
 {
     public partial class AdminForm : Form
     {
-
         private byte[] imageData;
-        private string connectionString = @"Server=(localdb)\MSSQLLocalDB;Database=POS_System;Trusted_Connection=True;";
-
+        private string connectionString = "Data Source=posdb.db;Version=3;";
         private CashierForm cashierForm;
 
         public AdminForm(CashierForm cashierFormInstance)
@@ -33,11 +33,9 @@ namespace POS_System
         public AdminForm()
         {
             InitializeComponent();
-            this.cashierForm = cashierForm;
-            this.Load += new System.EventHandler(this.AdminForm_Load);
-            this.comboBoxSaleID.SelectedIndexChanged += new System.EventHandler(this.comboBoxSaleID_SelectedIndexChanged);
-            this.buttonDeleteSale.Click += new System.EventHandler(this.buttonDeleteSale_Click);
-          
+            this.Load += new EventHandler(this.AdminForm_Load);
+            this.comboBoxSaleID.SelectedIndexChanged += new EventHandler(this.comboBoxSaleID_SelectedIndexChanged);
+            this.buttonDeleteSale.Click += new EventHandler(this.buttonDeleteSale_Click);
         }
 
         private void buttonLogout_Click(object sender, EventArgs e)
@@ -57,23 +55,20 @@ namespace POS_System
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 pictureBoxItemImage.Image = System.Drawing.Image.FromFile(openFileDialog.FileName);
-
                 using (FileStream fs = new FileStream(openFileDialog.FileName, FileMode.Open, FileAccess.Read))
                 {
                     imageData = new byte[fs.Length];
                     fs.Read(imageData, 0, (int)fs.Length);
                 }
-
-                this.imageData = imageData;
             }
         }
 
         private void buttonAddItem_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(textBoxAddItemName.Text) ||
-        string.IsNullOrWhiteSpace(textBoxAddItemPrice.Text) ||
-        string.IsNullOrWhiteSpace(textBoxAddItemQuantity.Text) ||
-        imageData == null)
+                string.IsNullOrWhiteSpace(textBoxAddItemPrice.Text) ||
+                string.IsNullOrWhiteSpace(textBoxAddItemQuantity.Text) ||
+                imageData == null)
             {
                 MessageBox.Show("Please fill in all fields and upload an image.");
                 return;
@@ -90,13 +85,13 @@ namespace POS_System
                 return;
             }
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "INSERT INTO Items (ItemName, Price, Stock, ImageData) VALUES (@ItemName, @Price, @Stock, @ImageData)";
 
                 try
                 {
-                    SqlCommand cmd = new SqlCommand(query, conn);
+                    SQLiteCommand cmd = new SQLiteCommand(query, conn);
                     cmd.Parameters.AddWithValue("@ItemName", itemName);
                     cmd.Parameters.AddWithValue("@Price", itemPrice);
                     cmd.Parameters.AddWithValue("@Stock", itemQuantity);
@@ -117,36 +112,35 @@ namespace POS_System
                     MessageBox.Show("Error adding item: " + ex.Message);
                 }
             }
-
         }
 
         private void comboBoxItemID_SelectedIndexChanged(object sender, EventArgs e)
         {
             int selectedItemId = (int)comboBoxUpdateID.SelectedValue;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
-                string query = "SELECT Name, Price, Quantity FROM Items WHERE ItemID = @ItemID";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                string query = "SELECT ItemName, Price, Stock FROM Items WHERE ItemID = @ItemID";
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@ItemID", selectedItemId);
 
                 conn.Open();
-                SqlDataReader reader = cmd.ExecuteReader();
+                SQLiteDataReader reader = cmd.ExecuteReader();
                 if (reader.Read())
                 {
-                    textBoxUpdateItemName.Text = reader["Name"].ToString();
+                    textBoxUpdateItemName.Text = reader["ItemName"].ToString();
                     textBoxUpdateItemPrice.Text = reader["Price"].ToString();
-                    textBoxUpdateItemQuantity.Text = reader["Quantity"].ToString();
+                    textBoxUpdateItemQuantity.Text = reader["Stock"].ToString();
                 }
             }
         }
 
         private void LoadUsers()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "SELECT Username FROM Users";
-                SqlDataAdapter adapter = new SqlDataAdapter(query, conn);
+                SQLiteDataAdapter adapter = new SQLiteDataAdapter(query, conn);
                 DataTable dataTable = new DataTable();
                 adapter.Fill(dataTable);
 
@@ -160,10 +154,10 @@ namespace POS_System
         {
             string selectedUsername = comboBoxSelectUser.SelectedValue.ToString();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "DELETE FROM Users WHERE Username = @Username";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Username", selectedUsername);
 
                 conn.Open();
@@ -191,15 +185,14 @@ namespace POS_System
                 return;
             }
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "DELETE FROM Items WHERE ItemID = @ItemID";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@ItemID", selectedItemID);
 
                 conn.Open();
                 cmd.ExecuteNonQuery();
-                conn.Close();
             }
 
             MessageBox.Show("Item deleted successfully!");
@@ -212,12 +205,12 @@ namespace POS_System
             string password = textBoxPassword.Text;
             string role = comboBoxRole.SelectedItem.ToString();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
-                string query = "INSERT INTO Users (Username, PasswordHash, Role) VALUES (@Username, @PasswordHash, @Role)";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                string query = "INSERT INTO Users (Username, Password, Role) VALUES (@Username, @Password, @Role)";
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Username", username);
-                cmd.Parameters.AddWithValue("@PasswordHash", password);
+                cmd.Parameters.AddWithValue("@Password", password);
                 cmd.Parameters.AddWithValue("@Role", role);
 
                 conn.Open();
@@ -245,31 +238,39 @@ namespace POS_System
                 return;
             }
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "SELECT ItemName, Stock FROM Items WHERE ItemID = @ItemID";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@ItemID", selectedItemID);
 
                 conn.Open();
-                SqlDataReader reader = cmd.ExecuteReader();
-                if (reader.Read())
+                using (SQLiteDataReader reader = cmd.ExecuteReader())
                 {
-                    textBoxDeleteItemName.Text = reader["ItemName"].ToString();
-                    textBoxDeleteItemQuantity.Text = reader["Stock"].ToString();
+                    if (reader.Read())
+                    {
+                        textBoxDeleteItemName.Text = reader["ItemName"].ToString();
+                        textBoxDeleteItemQuantity.Text = reader["Stock"].ToString();
+                    }
                 }
-                conn.Close();
             }
         }
 
+
         private void buttonRemoveUser_Click(object sender, EventArgs e)
         {
+            if (comboBoxSelectUser.SelectedValue == null)
+            {
+                MessageBox.Show("Please select a valid user.");
+                return;
+            }
+
             string selectedUsername = comboBoxSelectUser.SelectedValue.ToString();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "DELETE FROM Users WHERE Username = @Username";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Username", selectedUsername);
 
                 conn.Open();
@@ -280,30 +281,33 @@ namespace POS_System
             LoadUsers();
         }
 
+
         private void comboBoxUpdateID_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBoxUpdateID.SelectedItem != null)
             {
                 int selectedItemID = (int)comboBoxUpdateID.SelectedItem;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
                 {
                     string query = "SELECT ItemName, Price, Stock FROM Items WHERE ItemID = @ItemID";
-                    SqlCommand cmd = new SqlCommand(query, conn);
+                    SQLiteCommand cmd = new SQLiteCommand(query, conn);
                     cmd.Parameters.AddWithValue("@ItemID", selectedItemID);
 
                     conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    if (reader.Read())
+                    using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-                        textBoxUpdateItemName.Text = reader["ItemName"].ToString();
-                        textBoxUpdateItemPrice.Text = reader["Price"].ToString();
-                        textBoxUpdateItemQuantity.Text = reader["Stock"].ToString();
+                        if (reader.Read())
+                        {
+                            textBoxUpdateItemName.Text = reader["ItemName"].ToString();
+                            textBoxUpdateItemPrice.Text = reader["Price"].ToString();
+                            textBoxUpdateItemQuantity.Text = reader["Stock"].ToString();
+                        }
                     }
-                    conn.Close();
                 }
             }
         }
+
 
         private void buttonUpdateItem_Click(object sender, EventArgs e)
         {
@@ -315,13 +319,26 @@ namespace POS_System
 
             int selectedItemID = (int)comboBoxUpdateID.SelectedItem;
             string itemName = textBoxUpdateItemName.Text;
-            decimal itemPrice = decimal.Parse(textBoxUpdateItemPrice.Text);
-            int itemStock = int.Parse(textBoxUpdateItemQuantity.Text);
+            decimal itemPrice;
+            int itemStock;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            // Input validation
+            if (!decimal.TryParse(textBoxUpdateItemPrice.Text, out itemPrice))
+            {
+                MessageBox.Show("Please enter a valid price.");
+                return;
+            }
+
+            if (!int.TryParse(textBoxUpdateItemQuantity.Text, out itemStock))
+            {
+                MessageBox.Show("Please enter a valid quantity.");
+                return;
+            }
+
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "UPDATE Items SET ItemName = @ItemName, Price = @Price, Stock = @Stock WHERE ItemID = @ItemID";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@ItemName", itemName);
                 cmd.Parameters.AddWithValue("@Price", itemPrice);
                 cmd.Parameters.AddWithValue("@Stock", itemStock);
@@ -329,11 +346,11 @@ namespace POS_System
 
                 conn.Open();
                 cmd.ExecuteNonQuery();
-                conn.Close();
             }
 
             MessageBox.Show("Item updated successfully!");
-        }  
+        }
+
 
         private void AdminForm_Load(object sender, EventArgs e)
         {
@@ -343,25 +360,26 @@ namespace POS_System
         }
         private void LoadItemIdsIntoComboBox()
         {
-            string query = "SELECT ItemId FROM Items";
+            string query = "SELECT ItemID FROM Items";
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
 
                 try
                 {
                     conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    comboBoxUpdateID.Items.Clear();
-                    comboBoxDeleteID.Items.Clear();
-
-                    while (reader.Read())
+                    using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-                        int itemId = reader.GetInt32(0);
-                        comboBoxUpdateID.Items.Add(itemId);
-                        comboBoxDeleteID.Items.Add(itemId);
+                        comboBoxUpdateID.Items.Clear();
+                        comboBoxDeleteID.Items.Clear();
+
+                        while (reader.Read())
+                        {
+                            int itemId = reader.GetInt32(0);
+                            comboBoxUpdateID.Items.Add(itemId);
+                            comboBoxDeleteID.Items.Add(itemId);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -371,12 +389,13 @@ namespace POS_System
             }
         }
 
+
         private void buttonGenerateReport_Click(object sender, EventArgs e)
         {
             DateTime fromDate = dateTimePickerFrom.Value.Date;
             DateTime toDate = dateTimePickerTo.Value.Date;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = @"
         SELECT SaleID, SaleDate, SaleTime, CashierID, TotalAmount, ChangeGiven
@@ -384,14 +403,14 @@ namespace POS_System
         WHERE SaleDate BETWEEN @FromDate AND @ToDate
         ORDER BY SaleDate ASC";
 
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@FromDate", fromDate);
                 cmd.Parameters.AddWithValue("@ToDate", toDate);
 
                 try
                 {
                     conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
+                    SQLiteDataReader reader = cmd.ExecuteReader();
 
                     StringBuilder report = new StringBuilder();
                     report.AppendLine("SaleID\tDate\tTime\tCashierID\tTotalAmount\tChangeGiven");
@@ -400,7 +419,11 @@ namespace POS_System
                     {
                         int saleID = reader.GetInt32(0);
                         DateTime date = reader.GetDateTime(1);
-                        TimeSpan time = reader.GetTimeSpan(2);
+
+                        // Read SaleTime as string
+                        string saleTimeString = reader.GetString(2); // Assuming it's stored as a string
+                        string timeFormatted = saleTimeString; // Directly use the string for formatting if needed
+
                         int cashierID = reader.GetInt32(3);
                         decimal totalAmount = reader.GetDecimal(4);
                         decimal changeGiven = reader.GetDecimal(5);
@@ -408,7 +431,7 @@ namespace POS_System
                         string totalAmountFormatted = "Rs. " + totalAmount.ToString("0.00");
                         string changeGivenFormatted = "Rs. " + changeGiven.ToString("0.00");
 
-                        report.AppendLine($"{saleID}\t{date.ToShortDateString()}\t{time}\t{cashierID}\t{totalAmountFormatted}\t{changeGivenFormatted}");
+                        report.AppendLine($"{saleID}\t{date.ToShortDateString()}\t{timeFormatted}\t{cashierID}\t{totalAmountFormatted}\t{changeGivenFormatted}");
                     }
 
                     MessageBox.Show("Report generated successfully. Click OK to download the PDF.", "Sales Report");
@@ -421,6 +444,9 @@ namespace POS_System
                 }
             }
         }
+
+
+
 
         private void SaveReportAsPDF(string reportContent)
         {
@@ -446,19 +472,20 @@ namespace POS_System
 
         private void LoadSaleIDs()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "SELECT SaleID FROM Sales";
 
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 try
                 {
                     conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    while (reader.Read())
+                    using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-                        comboBoxSaleID.Items.Add(reader.GetInt32(0));
+                        while (reader.Read())
+                        {
+                            comboBoxSaleID.Items.Add(reader.GetInt32(0));
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -468,33 +495,43 @@ namespace POS_System
             }
         }
 
+
         private void comboBoxSaleID_SelectedIndexChanged(object sender, EventArgs e)
         {
-            int selectedSaleID = (int)comboBoxSaleID.SelectedItem;
-            LoadSaleDetails(selectedSaleID);
+            if (comboBoxSaleID.SelectedItem != null)
+            {
+                int selectedSaleID = (int)comboBoxSaleID.SelectedItem;
+                LoadSaleDetails(selectedSaleID);
+            }
         }
+
 
         private void LoadSaleDetails(int saleID)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "SELECT SaleDate, SaleTime, CashierID, TotalAmount, ChangeGiven FROM Sales WHERE SaleID = @SaleID";
 
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 cmd.Parameters.AddWithValue("@SaleID", saleID);
 
                 try
                 {
                     conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    if (reader.Read())
+                    using (SQLiteDataReader reader = cmd.ExecuteReader())
                     {
-                        textBoxSaleDate.Text = reader.GetDateTime(0).ToShortDateString();
-                        textBoxSaleTime.Text = reader.GetTimeSpan(1).ToString();
-                        textBoxCashierID.Text = reader.GetInt32(2).ToString();
-                        textBoxTotalAmount.Text = reader.GetDecimal(3).ToString("C");
-                        textBoxChangeGiven.Text = reader.GetDecimal(4).ToString("C");
+                        if (reader.Read())
+                        {
+                            textBoxSaleDate.Text = reader.GetDateTime(0).ToShortDateString();
+
+                            // Read SaleTime as string and parse it
+                            string saleTimeString = reader.GetString(1);
+                            textBoxSaleTime.Text = saleTimeString; // Directly set the string if no formatting needed
+
+                            textBoxCashierID.Text = reader.GetInt32(2).ToString();
+                            textBoxTotalAmount.Text = reader.GetDecimal(3).ToString("C");
+                            textBoxChangeGiven.Text = reader.GetDecimal(4).ToString("C");
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -504,16 +541,18 @@ namespace POS_System
             }
         }
 
+
+
         private void buttonDeleteSale_Click(object sender, EventArgs e)
         {
             if (comboBoxSaleID.SelectedItem != null)
             {
                 int selectedSaleID = (int)comboBoxSaleID.SelectedItem;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString))
                 {
                     string query = "DELETE FROM Sales WHERE SaleID = @SaleID";
-                    SqlCommand cmd = new SqlCommand(query, conn);
+                    SQLiteCommand cmd = new SQLiteCommand(query, conn);
                     cmd.Parameters.AddWithValue("@SaleID", selectedSaleID);
 
                     try
@@ -522,7 +561,7 @@ namespace POS_System
                         cmd.ExecuteNonQuery();
                         MessageBox.Show("Sale data deleted successfully.");
                         comboBoxSaleID.Items.Clear();
-                        LoadSaleIDs(); 
+                        LoadSaleIDs();
                     }
                     catch (Exception ex)
                     {
@@ -531,6 +570,7 @@ namespace POS_System
                 }
             }
         }
+
 
         private void ClearSaleDetails()
         {

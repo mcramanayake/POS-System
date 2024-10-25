@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
+using System.Data.SQLite;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Data.SQLite;
+
 
 namespace POS_System
 {
@@ -73,26 +76,28 @@ namespace POS_System
         {
             bool isValid = false;
             userId = -1; // Initialize userId to an invalid state
-            string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=POS_System;Trusted_Connection=True;";
+            string connectionString = "Data Source=posdb.db;Version=3;"; // SQLite connection string
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            // Use SQLiteConnection instead of SqlConnection
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
                     // Query to check if the username and password match
-                    string query = "SELECT UserID FROM Users WHERE Username = @Username AND PasswordHash = @PasswordHash";
+                    string query = "SELECT UserID FROM Users WHERE Username = @Username AND Password = @Password";
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                     {
+                        // Use SQLiteParameter instead of SqlParameter
                         cmd.Parameters.AddWithValue("@Username", username);
-                        cmd.Parameters.AddWithValue("@PasswordHash", password); // In real-world apps, use hashed passwords
+                        cmd.Parameters.AddWithValue("@Password", password); // Ensure the password is hashed
 
                         // Get the UserID if valid
                         object result = cmd.ExecuteScalar();
                         if (result != null)
                         {
-                            userId = (int)result; // Assign the valid UserID
+                            userId = Convert.ToInt32(result); // Assign the valid UserID
                             isValid = true;
                         }
                     }
@@ -106,22 +111,29 @@ namespace POS_System
         }
 
 
+
         // Method to get the user's role
         private string GetUserRole(string username)
         {
             string role = string.Empty;
-            string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=POS_System;Trusted_Connection=True;";
+            string connectionString = "Data Source=posdb.db;Version=3;";
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            // Use SQLiteConnection instead of SqlConnection
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 try
                 {
                     conn.Open();
+                    // Query to retrieve the role based on the username
                     string query = "SELECT Role FROM Users WHERE Username = @Username";
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    // Use SQLiteCommand instead of SqlCommand
+                    using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
                     {
+                        // Use SQLite parameters
                         cmd.Parameters.AddWithValue("@Username", username);
+
+                        // Execute the query and retrieve the result
                         object result = cmd.ExecuteScalar();
                         if (result != null)
                         {
@@ -136,7 +148,8 @@ namespace POS_System
             }
             return role;
         }
-    
+
+
 
     }
 }

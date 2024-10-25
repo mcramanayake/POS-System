@@ -46,6 +46,11 @@
             this.printDialog1 = new System.Windows.Forms.PrintDialog();
             this.printDocument1 = new System.Drawing.Printing.PrintDocument();
             this.buttonClose = new System.Windows.Forms.Button();
+            this.comboBoxItemID = new System.Windows.Forms.ComboBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.textBoxItemName = new System.Windows.Forms.TextBox();
+            this.textBoxQuantity = new System.Windows.Forms.TextBox();
+            this.buttonFetchItemDetails = new System.Windows.Forms.Button();
             this.groupBoxSale.SuspendLayout();
             this.groupBoxSelectedItems.SuspendLayout();
             this.SuspendLayout();
@@ -222,6 +227,51 @@
             this.buttonClose.UseVisualStyleBackColor = true;
             this.buttonClose.Click += new System.EventHandler(this.buttonClose_Click);
             // 
+            // comboBoxItemID
+            // 
+            this.comboBoxItemID.FormattingEnabled = true;
+            this.comboBoxItemID.Location = new System.Drawing.Point(2179, 155);
+            this.comboBoxItemID.Name = "comboBoxItemID";
+            this.comboBoxItemID.Size = new System.Drawing.Size(314, 28);
+            this.comboBoxItemID.TabIndex = 14;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label4.Location = new System.Drawing.Point(2262, 109);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(175, 27);
+            this.label4.TabIndex = 15;
+            this.label4.Text = "View Item Stock";
+            // 
+            // textBoxItemName
+            // 
+            this.textBoxItemName.Location = new System.Drawing.Point(2179, 201);
+            this.textBoxItemName.Name = "textBoxItemName";
+            this.textBoxItemName.ReadOnly = true;
+            this.textBoxItemName.Size = new System.Drawing.Size(314, 26);
+            this.textBoxItemName.TabIndex = 16;
+            // 
+            // textBoxQuantity
+            // 
+            this.textBoxQuantity.Location = new System.Drawing.Point(2179, 246);
+            this.textBoxQuantity.Name = "textBoxQuantity";
+            this.textBoxQuantity.ReadOnly = true;
+            this.textBoxQuantity.Size = new System.Drawing.Size(314, 26);
+            this.textBoxQuantity.TabIndex = 17;
+            // 
+            // buttonFetchItemDetails
+            // 
+            this.buttonFetchItemDetails.Font = new System.Drawing.Font("Microsoft YaHei UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonFetchItemDetails.Location = new System.Drawing.Point(2384, 297);
+            this.buttonFetchItemDetails.Name = "buttonFetchItemDetails";
+            this.buttonFetchItemDetails.Size = new System.Drawing.Size(109, 51);
+            this.buttonFetchItemDetails.TabIndex = 18;
+            this.buttonFetchItemDetails.Text = "Check";
+            this.buttonFetchItemDetails.UseVisualStyleBackColor = true;
+            this.buttonFetchItemDetails.Click += new System.EventHandler(this.buttonFetchItemDetails_Click);
+            // 
             // CashierForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -229,7 +279,12 @@
             this.AutoScroll = true;
             this.AutoSize = true;
             this.BackColor = System.Drawing.Color.DodgerBlue;
-            this.ClientSize = new System.Drawing.Size(2151, 1195);
+            this.ClientSize = new System.Drawing.Size(2564, 1195);
+            this.Controls.Add(this.buttonFetchItemDetails);
+            this.Controls.Add(this.textBoxQuantity);
+            this.Controls.Add(this.textBoxItemName);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.comboBoxItemID);
             this.Controls.Add(this.buttonClose);
             this.Controls.Add(this.buttonPrintRecipt);
             this.Controls.Add(this.buttonExit);
@@ -247,6 +302,7 @@
             this.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(64)))));
             this.Name = "CashierForm";
             this.Text = "CashierForm";
+            this.Load += new System.EventHandler(this.CashierForm_Load);
             this.groupBoxSale.ResumeLayout(false);
             this.groupBoxSelectedItems.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -274,5 +330,10 @@
         private System.Windows.Forms.PrintDialog printDialog1;
         private System.Drawing.Printing.PrintDocument printDocument1;
         private System.Windows.Forms.Button buttonClose;
+        private System.Windows.Forms.ComboBox comboBoxItemID;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox textBoxItemName;
+        private System.Windows.Forms.TextBox textBoxQuantity;
+        private System.Windows.Forms.Button buttonFetchItemDetails;
     }
 }

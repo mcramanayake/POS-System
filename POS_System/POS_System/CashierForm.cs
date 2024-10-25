@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SqlClient;
+using System.Data.SQLite; // Change to SQLite
 using System.Drawing;
 using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -15,7 +16,8 @@ namespace POS_System
 {
     public partial class CashierForm : Form
     {
-        private string connectionString = @"Server=(localdb)\MSSQLLocalDB;Database=POS_System;Trusted_Connection=True;";
+        private string connectionString = @"Data Source=posdb.db;Version=3;"; // Updated connection string for SQLite
+
         public CashierForm()
         {
             InitializeComponent();
@@ -33,15 +35,15 @@ namespace POS_System
         {
             List<Item> items = new List<Item>();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString)) // Change to SQLiteConnection
             {
                 string query = "SELECT ItemId, ItemName, Price, Stock, ImageData FROM Items";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn); // Change to SQLiteCommand
 
                 try
                 {
                     conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
+                    SQLiteDataReader reader = cmd.ExecuteReader(); // Change to SQLiteDataReader
 
                     while (reader.Read())
                     {
@@ -64,6 +66,7 @@ namespace POS_System
 
             return items;
         }
+
         private void LoadItemsForCashier()
         {
             flowLayoutPanelItems.Controls.Clear();
@@ -227,14 +230,13 @@ namespace POS_System
             textBoxTotalAmount.Text = totalPrice.ToString("C");
         }
 
-
         private void UpdateItemStockAfterSale(int itemId, int quantitySold)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString)) // Change to SQLiteConnection
             {
                 string query = "UPDATE Items SET Stock = Stock - @QuantitySold WHERE ItemID = @ItemID AND Stock >= @QuantitySold";
 
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn); // Change to SQLiteCommand
                 cmd.Parameters.AddWithValue("@ItemID", itemId);
                 cmd.Parameters.AddWithValue("@QuantitySold", quantitySold);
 
@@ -248,6 +250,7 @@ namespace POS_System
                 }
             }
         }
+
         private void buttonCheckout_Click(object sender, EventArgs e)
         {
             Checkout();
@@ -293,6 +296,7 @@ namespace POS_System
             textBoxCustomerPayment.Clear();
             textBoxChange.Text = "0.00";
         }
+
         private void buttonClear_Click(object sender, EventArgs e)
         {
             flowLayoutPanelCart.Controls.Clear();
@@ -335,7 +339,7 @@ namespace POS_System
             this.Close();
         }
 
-        private void buttonPrintRecipt_Click(object sender, EventArgs e)
+        private void buttonPrintReceipt_Click(object sender, EventArgs e)
         {
             PrintDocument printDoc = new PrintDocument();
             printDoc.PrintPage += new PrintPageEventHandler(PrintReceipt);
@@ -355,7 +359,7 @@ namespace POS_System
             string currentDate = DateTime.Now.ToString("MM/dd/yyyy");
             string currentTime = DateTime.Now.ToString("hh:mm tt");
 
-            graphics.DrawString("Shop Receipt", new Font("Courier New", 18), new SolidBrush(Color.Black), startX, startY);
+            graphics.DrawString("Hardware Shop Receipt", new Font("Courier New", 18), new SolidBrush(Color.Black), startX, startY);
             offset += (int)fontHeight + 10;
 
             graphics.DrawString($"Date: {currentDate}", font, new SolidBrush(Color.Black), startX, startY + offset);
@@ -369,7 +373,7 @@ namespace POS_System
                 Label quantityLabel = cartItemPanel.Controls.OfType<Label>().FirstOrDefault(l => l.Name == "labelQuantity");
 
                 int quantity = int.Parse(quantityLabel.Text);
-                string productLine = $"{item.Name} x{quantity} @ Rs.{item.Price} = ${quantity * item.Price}";
+                string productLine = $"{item.Name} x{quantity} @ Rs.{item.Price} = Rs.{quantity * item.Price}";
 
                 graphics.DrawString(productLine, font, new SolidBrush(Color.Black), startX, startY + offset);
                 offset += (int)fontHeight + 5;
@@ -378,19 +382,18 @@ namespace POS_System
             offset += 20;
             graphics.DrawString($"Total: Rs.{totalPrice.ToString("0.00")}", font, new SolidBrush(Color.Black), startX, startY + offset);
         }
+
         private void InsertSale(decimal totalAmount, decimal changeGiven)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString))
             {
                 string query = "INSERT INTO Sales (SaleDate, SaleTime, CashierID, TotalAmount, ChangeGiven) VALUES (@SaleDate, @SaleTime, @CashierID, @TotalAmount, @ChangeGiven)";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SQLiteCommand cmd = new SQLiteCommand(query, conn);
 
-                int cashierID = UserSession.UserID;
-                cmd.Parameters.AddWithValue("@CashierID", cashierID);
-
+                // Directly use UserSession.UserID to get the current user's ID
+                cmd.Parameters.AddWithValue("@CashierID", UserSession.UserID);
                 cmd.Parameters.AddWithValue("@SaleDate", DateTime.Now.Date);
                 cmd.Parameters.AddWithValue("@SaleTime", DateTime.Now.TimeOfDay);
-
                 cmd.Parameters.AddWithValue("@TotalAmount", totalAmount);
                 cmd.Parameters.AddWithValue("@ChangeGiven", changeGiven);
 
@@ -406,9 +409,85 @@ namespace POS_System
             }
         }
 
+
         private void buttonClose_Click(object sender, EventArgs e)
         {
             Application.Exit();
         }
+
+        private void LoadItemIDs()
+        {
+            using (SQLiteConnection conn = new SQLiteConnection(connectionString)) // Use SQLiteConnection
+            {
+                string query = "SELECT ItemID FROM Items";
+                SQLiteCommand cmd = new SQLiteCommand(query, conn); // Use SQLiteCommand
+
+                try
+                {
+                    conn.Open();
+                    SQLiteDataReader reader = cmd.ExecuteReader(); // Use SQLiteDataReader
+
+                    while (reader.Read())
+                    {
+                        comboBoxItemID.Items.Add(reader["ItemID"].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error loading item IDs: " + ex.Message);
+                }
+            }
+        }
+
+        private void CashierForm_Load(object sender, EventArgs e)
+        {
+            LoadItemIDs();
+        }
+
+        private void buttonPrintRecipt_Click(object sender, EventArgs e)
+        {
+            PrintDocument printDoc = new PrintDocument();
+            printDoc.PrintPage += new PrintPageEventHandler(PrintReceipt);
+            printDoc.Print();
+        }
+
+        private void buttonFetchItemDetails_Click(object sender, EventArgs e)
+        {
+            if (comboBoxItemID.SelectedItem != null)
+            {
+                string selectedItemID = comboBoxItemID.SelectedItem.ToString();
+
+                using (SQLiteConnection conn = new SQLiteConnection(connectionString)) // Use SQLiteConnection
+                {
+                    string query = "SELECT ItemName, Stock FROM Items WHERE ItemID = @ItemID";
+                    SQLiteCommand cmd = new SQLiteCommand(query, conn); // Use SQLiteCommand
+                    cmd.Parameters.AddWithValue("@ItemID", selectedItemID);
+
+                    try
+                    {
+                        conn.Open();
+                        SQLiteDataReader reader = cmd.ExecuteReader(); // Use SQLiteDataReader
+
+                        if (reader.Read())
+                        {
+                            textBoxItemName.Text = reader["ItemName"].ToString();
+                            textBoxQuantity.Text = reader["Stock"].ToString();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Item not found.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error fetching item details: " + ex.Message);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select an Item ID.");
+            }
+        }   
     }
 }
